@@ -8,6 +8,7 @@ export default function Home() {
         <p className="text-muted-foreground">Your personal audio library</p>
         <div className="flex gap-3 justify-center">
           <Link className="underline" href="/login">Sign in</Link>
+          <Link className="underline" href="/register">Register</Link>
           <Link className="underline" href="/library">Go to library</Link>
         </div>
       </div>

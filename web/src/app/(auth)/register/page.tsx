@@ -12,37 +12,69 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 
-const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+const RegisterSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
   const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const form = useForm<z.infer<typeof LoginSchema>>({
-    resolver: zodResolver(LoginSchema),
-    defaultValues: { email: "", password: "" },
+  const form = useForm<z.infer<typeof RegisterSchema>>({
+    resolver: zodResolver(RegisterSchema),
+    defaultValues: { email: "", password: "", confirmPassword: "" },
   });
 
-  async function onSubmit(values: z.infer<typeof LoginSchema>) {
+  async function onSubmit(values: z.infer<typeof RegisterSchema>) {
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword(values);
+    const { error } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+    });
     setSubmitting(false);
+    
     if (error) {
-      form.setError("password", { message: error.message });
+      form.setError("email", { message: error.message });
       return;
     }
-    router.replace("/library");
+    
+    setSuccess(true);
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Check your email</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              We've sent you a confirmation link. Please check your email and click the link to activate your account.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <Link href="/login">Go to Sign In</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Sign in</CardTitle>
+          <CardTitle>Create Account</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -73,17 +105,30 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Signing in..." : "Sign in"}
+                {submitting ? "Creating account..." : "Create Account"}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="text-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/register" className="underline hover:text-primary">
-              Register
+            Already have an account?{" "}
+            <Link href="/login" className="underline hover:text-primary">
+              Sign in
             </Link>
           </p>
         </CardFooter>
