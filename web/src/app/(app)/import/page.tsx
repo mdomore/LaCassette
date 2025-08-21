@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const ImportSchema = z.object({
-  url: z.string().url().regex(/^https?:\/\/(www\.)?youtube\.com|youtu\.be/, "Must be a YouTube URL"),
+  url: z
+    .string()
+    .url()
+    .regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i, "Must be a YouTube URL"),
 });
 
 export default function ImportPage() {
