@@ -182,7 +182,8 @@ export async function POST(req: NextRequest) {
           album_cover_url: albumCoverUrl,
           artist_image_url: artistImageUrl,
           artist_id: enrichedMetadata?.artistId || null,
-          album_id: enrichedMetadata?.albumId || null
+          album_id: enrichedMetadata?.albumId || null,
+          youtube_url: url
         });
 
       if (metadataError) {

@@ -31,6 +31,15 @@ export default function ImportPage() {
     defaultValues: { url: "" },
   });
 
+  // Check for URL in query params and pre-fill the form
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFromParams = urlParams.get('url');
+    if (urlFromParams) {
+      form.setValue('url', urlFromParams);
+    }
+  }, [form]);
+
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createSupabaseBrowserClient();

@@ -29,6 +29,7 @@ interface AudioFile {
     albumCover?: string;
     artistId?: string;
     albumId?: string;
+    youtubeUrl?: string;
   };
   images?: {
     albumCover?: string;
@@ -212,7 +213,8 @@ export default function LibraryPage() {
             spotifyId: metadata.spotify_id,
             albumCover: metadata.album_cover_url,
             artistId: metadata.artist_id,
-            albumId: metadata.album_id
+            albumId: metadata.album_id,
+            youtubeUrl: metadata.youtube_url
           },
           images: {
             albumCover: metadata.album_cover_url,
@@ -1065,6 +1067,16 @@ export default function LibraryPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-64"
           />
+          
+          {/* YouTube URL filter indicator */}
+          {filteredFiles.some(file => file.metadata?.youtubeUrl) && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span>{filteredFiles.filter(file => file.metadata?.youtubeUrl).length} songs from YouTube</span>
+            </div>
+          )}
         </div>
       </div>
       
@@ -1633,6 +1645,16 @@ function SongCard({
             {file.metadata?.album}
           </p>
           
+          {/* YouTube URL indicator */}
+          {file.metadata?.youtubeUrl && (
+            <div className="flex items-center gap-1 mt-1">
+              <svg className="w-3 h-3 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span className="text-xs text-slate-400 dark:text-slate-500">YouTube</span>
+            </div>
+          )}
+          
           {/* Enriched Metadata */}
           {file.metadata?.genres && file.metadata.genres.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
@@ -1676,9 +1698,29 @@ function SongCard({
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
-            <Heart className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">
+              <Heart className="w-4 h-4" />
+            </Button>
+            
+            {/* YouTube Link Button */}
+            {file.metadata?.youtubeUrl && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-slate-600 dark:text-slate-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(file.metadata?.youtubeUrl, '_blank');
+                }}
+                title="Open YouTube Video"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </Button>
+            )}
+          </div>
           
           {/* Dropdown Menu */}
           <div className="relative" ref={menuRef}>
@@ -1745,6 +1787,24 @@ function SongCard({
                     <Image className="w-4 h-4 mr-2" /> 
                     {file.images?.albumCover ? 'Change Album Cover' : 'Add Album Cover'}
                   </button>
+                  
+                  {/* Re-import from YouTube option */}
+                  {file.metadata?.youtubeUrl && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        // Navigate to import page with pre-filled YouTube URL
+                        window.location.href = `/import?url=${encodeURIComponent(file.metadata?.youtubeUrl || '')}`;
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4 mr-2 inline" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                      Re-import from YouTube
+                    </button>
+                  )}
                 </div>
               </div>
             )}
