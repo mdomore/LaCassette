@@ -163,6 +163,24 @@ export default function LibraryPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [nowPlaying]);
 
+  // Ensure player state is properly synchronized
+  useEffect(() => {
+    if (nowPlaying && nowPlaying.audio) {
+      // Sync the audio element's current time with our state
+      const syncTime = () => {
+        if (Math.abs(nowPlaying.audio.currentTime - nowPlaying.currentTime) > 0.5) {
+          setNowPlaying(prev => prev ? {
+            ...prev,
+            currentTime: nowPlaying.audio.currentTime
+          } : null);
+        }
+      };
+      
+      const interval = setInterval(syncTime, 100);
+      return () => clearInterval(interval);
+    }
+  }, [nowPlaying]);
+
   const loadAudioFiles = async (userId: string) => {
     const supabase = createSupabaseBrowserClient();
     
@@ -447,12 +465,15 @@ export default function LibraryPage() {
       });
 
       audio.addEventListener("timeupdate", () => {
-        if (nowPlaying) {
-          setNowPlaying(prev => prev ? {
-            ...prev,
-            currentTime: audio.currentTime
-          } : null);
-        }
+        setNowPlaying(prev => {
+          if (prev && prev.file.id === file.id) {
+            return {
+              ...prev,
+              currentTime: audio.currentTime
+            };
+          }
+          return prev;
+        });
       });
 
       audio.addEventListener("ended", () => {
@@ -472,7 +493,12 @@ export default function LibraryPage() {
 
       // Start playing
       await audio.play();
-      setNowPlaying(prev => prev ? { ...prev, isPlaying: true } : null);
+      setNowPlaying(prev => {
+        if (prev && prev.file.id === file.id) {
+          return { ...prev, isPlaying: true };
+        }
+        return prev;
+      });
 
     } catch (error) {
       console.error("Error playing audio:", error);
@@ -486,8 +512,11 @@ export default function LibraryPage() {
       nowPlaying.audio.pause();
       setNowPlaying(prev => prev ? { ...prev, isPlaying: false } : null);
     } else {
-      nowPlaying.audio.play();
-      setNowPlaying(prev => prev ? { ...prev, isPlaying: true } : null);
+      nowPlaying.audio.play().then(() => {
+        setNowPlaying(prev => prev ? { ...prev, isPlaying: true } : null);
+      }).catch(error => {
+        console.error('Error playing audio:', error);
+      });
     }
   };
 
@@ -582,6 +611,10 @@ export default function LibraryPage() {
     setSelectedAlbum(null);
     setSelectedPlaylist(null);
     setCurrentView('songs');
+    // Ensure player state is maintained when switching views
+    if (nowPlaying) {
+      console.log('Maintaining player state for artist view:', nowPlaying.file.metadata?.title);
+    }
   };
 
   const handleAlbumClick = (album: Album) => {
@@ -589,6 +622,10 @@ export default function LibraryPage() {
     setSelectedArtist(null);
     setSelectedPlaylist(null);
     setCurrentView('songs');
+    // Ensure player state is maintained when switching views
+    if (nowPlaying) {
+      console.log('Maintaining player state for album view:', nowPlaying.file.metadata?.title);
+    }
   };
 
   const handlePlaylistClick = (playlist: Playlist) => {
@@ -596,6 +633,10 @@ export default function LibraryPage() {
     setSelectedArtist(null);
     setSelectedAlbum(null);
     setCurrentView('songs');
+    // Ensure player state is maintained when switching views
+    if (nowPlaying) {
+      console.log('Maintaining player state for playlist view:', nowPlaying.file.metadata?.title);
+    }
   };
 
   const clearSelection = () => {

@@ -242,7 +242,27 @@ export async function POST(req: NextRequest) {
 function extractBasicMetadata(title: string) {
   console.log(`Extracting metadata from title: "${title}"`);
   
-  // Pattern 1: "Artist - Song" or "Artist - Album - Song"
+  // Pattern 1: Check for "Song (Year) - Artist" format first (common YouTube pattern)
+  const songYearArtistPattern = /^(.+?)\s*\(([^)]+)\)\s*-\s*(.+)$/;
+  const songYearArtistMatch = title.match(songYearArtistPattern);
+  if (songYearArtistMatch) {
+    const songTitle = songYearArtistMatch[1].trim();
+    const year = songYearArtistMatch[2].trim();
+    const artist = songYearArtistMatch[3].trim();
+    
+    // Check if the year is actually a year (4 digits or contains year-like text)
+    if (/^\d{4}$/.test(year) || year.toLowerCase().includes('remaster') || year.toLowerCase().includes('edition')) {
+      const result = {
+        artist: artist,
+        album: "Unknown Album",
+        title: songTitle
+      };
+      console.log(`Song-Year-Artist pattern: Artist="${result.artist}", Title="${result.title}", Year="${year}"`);
+      return result;
+    }
+  }
+
+  // Pattern 2: "Artist - Song" or "Artist - Album - Song"
   const dashPattern = /^(.+?)\s*-\s*(.+?)(?:\s*-\s*(.+))?$/;
   const dashMatch = title.match(dashPattern);
   if (dashMatch) {
@@ -267,27 +287,9 @@ function extractBasicMetadata(title: string) {
     }
   }
 
-  // Pattern 2: "Song (Year) Artist" - common for YouTube uploads
-  const songYearArtistPattern = /^(.+?)\s*\(([^)]+)\)\s*(.+)$/;
-  const songYearArtistMatch = title.match(songYearArtistPattern);
-  if (songYearArtistMatch) {
-    const songTitle = songYearArtistMatch[1].trim();
-    const year = songYearArtistMatch[2].trim();
-    const artist = songYearArtistMatch[3].trim();
-    
-    // Check if the year is actually a year (4 digits or contains year-like text)
-    if (/^\d{4}$/.test(year) || year.toLowerCase().includes('remaster') || year.toLowerCase().includes('edition')) {
-      const result = {
-        artist: artist,
-        album: "Unknown Album",
-        title: songTitle
-      };
-      console.log(`Song-Year-Artist pattern: Artist="${result.artist}", Title="${result.title}", Year="${year}"`);
-      return result;
-    }
-  }
 
-  // Pattern 3: "Song (Official Video)" or similar - extract just the song title
+
+  // Pattern 2: "Song (Official Video)" or similar - extract just the song title
   const songVideoPattern = /^(.+?)\s*\(([^)]+)\)$/;
   const songVideoMatch = title.match(songVideoPattern);
   if (songVideoMatch) {
@@ -310,7 +312,7 @@ function extractBasicMetadata(title: string) {
     }
   }
 
-  // Pattern 4: "Artist: Song" or "Artist - Song" with quotes
+  // Pattern 3: "Artist: Song" or "Artist - Song" with quotes
   const artistColonPattern = /^(.+?)\s*[:]\s*(.+)$/;
   const artistColonMatch = title.match(artistColonPattern);
   if (artistColonMatch) {
